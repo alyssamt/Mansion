@@ -4,7 +4,10 @@ using UnityEngine;
 
 public class Player : MonoBehaviour {
 
+    public AudioSource hiss;
     public float speed;
+    public float damage;
+
     private float movex;
     private float movey;
     private Rigidbody2D rb;
@@ -32,6 +35,8 @@ public class Player : MonoBehaviour {
 		floor1_y = GameObject.Find ("Floor1").transform.position.y - 1.5f;
 		floor2_y = GameObject.Find ("Floor2").transform.position.y - 1.5f;
 		floor3_y = GameObject.Find ("Floor3").transform.position.y - 1.5f;
+
+        hiss = GetComponent<AudioSource>();
     }
 
     // Update is called once per frame
@@ -104,12 +109,13 @@ public class Player : MonoBehaviour {
 
     void Scare()
     {
+        hiss.Play();
 		GameObject[] kids = GameObject.FindGameObjectsWithTag ("Kid");
 		foreach (GameObject kid in kids) {
 			Kid kidScript = kid.GetComponent<Kid> ();
 			if (kidScript.floor == floor) {
-				kidScript.scareMeter += 0.1f;
-				Debug.Log ("Scare meter: " + kidScript.scareMeter);
+				kidScript.scareMeter += damage;
+                kidScript.Scream();
 			}
 		}
     }
