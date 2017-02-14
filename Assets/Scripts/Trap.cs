@@ -6,16 +6,15 @@ using UnityEngine.EventSystems;
 
 public class Trap : MonoBehaviour, IPointerClickHandler, IDragHandler
 {
-    public GameManager gm;
+    //public GameManager gm;
+    public TrapManager tm;
     public GameObject prefab;
     public Text remaining;
 
-    private SpriteRenderer sprite;
-
     void Awake()
     {
-        if (!gm) gm = GameObject.Find("GameManager").GetComponent<GameManager>();
-        sprite = GetComponent<SpriteRenderer>();
+        //if (!gm) gm = GameObject.Find("GameManager").GetComponent<GameManager>();
+        if (!tm) tm = GameObject.Find("TrapManager").GetComponent<TrapManager>();
         remaining = GetComponentInChildren<Text>();
     }
 
@@ -28,10 +27,10 @@ public class Trap : MonoBehaviour, IPointerClickHandler, IDragHandler
     {
         if (remaining.text != "0")
         {
-            gm.trap = prefab;
+            tm.currTrap = prefab;
         } else
         {
-            gm.trap = null;
+            tm.currTrap = null;
         }
     }
 

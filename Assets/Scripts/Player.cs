@@ -4,39 +4,42 @@ using UnityEngine;
 
 public class Player : MonoBehaviour {
 
-    public AudioSource hiss;
+    public bool possessing = false;
+
     public float speed;
-    public float damage;
 
-    private float movex;
-    private float movey;
-    private Rigidbody2D rb;
-    private GameManager gm;
+    public int floor;
+    public int lives;
+    public int damage;
+    public int maxLives;
 
-    private int floor;
-    private float lastW;
-    private float lastS;
+    public GameObject livesDisplay;
+
+    public Color hurtColor;
+
+    public AudioClip hiss;
+    public AudioClip groan;
 
     private bool ready = false;
 
-	private float floor1_y;
-	private float floor2_y;
-	private float floor3_y;
+    private float movex;
+    private float movey;
+
+    private GameManager gm;
+    private Rigidbody2D rb;
+    private SpriteRenderer rend;
+    private AudioSource audioSource;
 
     // Use this for initialization
     void Start()
     {
         floor = 3;
-        lastS = Time.time;
-        lastW = Time.time;
+        lives = maxLives;
+        if (!livesDisplay) livesDisplay = GameObject.Find("Lives");
         gm = GameObject.Find("GameManager").GetComponent<GameManager>();
         rb = GetComponent<Rigidbody2D>();
-
-		floor1_y = GameObject.Find ("Floor1").transform.position.y - 1.5f;
-		floor2_y = GameObject.Find ("Floor2").transform.position.y - 1.5f;
-		floor3_y = GameObject.Find ("Floor3").transform.position.y - 1.5f;
-
-        hiss = GetComponent<AudioSource>();
+        rend = GetComponent<SpriteRenderer>();
+        audioSource = GetComponent<AudioSource>();
     }
 
     // Update is called once per frame
@@ -91,16 +94,16 @@ public class Player : MonoBehaviour {
             }
 
 			//Calculate floor
-			if (transform.position.y > floor3_y) {
+			if (transform.position.y > gm.floor3_y) {
 				floor = 3;
-			} else if (transform.position.y > floor2_y) {
+			} else if (transform.position.y > gm.floor2_y) {
 				floor = 2;
 			} else {
 				floor = 1;
 			}
 
 			//Scare with spacebar
-			if (!ready && Input.GetKeyDown("space"))
+			if (Input.GetKeyDown(KeyCode.E))
             {
                 Scare();
             }
@@ -109,13 +112,13 @@ public class Player : MonoBehaviour {
 
     void Scare()
     {
-        hiss.Play();
+        audioSource.clip = hiss;
+        audioSource.Play();
 		GameObject[] kids = GameObject.FindGameObjectsWithTag ("Kid");
 		foreach (GameObject kid in kids) {
 			Kid kidScript = kid.GetComponent<Kid> ();
 			if (kidScript.floor == floor) {
-				kidScript.scareMeter += damage;
-                kidScript.Scream();
+                kidScript.GetScared(damage);
 			}
 		}
     }
@@ -123,5 +126,29 @@ public class Player : MonoBehaviour {
     void EnableCollider()
     {
         gameObject.GetComponent<Collider2D>().enabled = true;
+    }
+
+    public void DecrementLife()
+    {
+        rend.color = hurtColor;
+        Invoke("RevertColor", 1);
+
+        audioSource.clip = groan;
+        audioSource.Play();
+
+        lives -= 1;
+
+        Transform heart = livesDisplay.transform.GetChild(lives);
+        heart.gameObject.SetActive(false);
+
+        if (lives == 0)
+        {
+            gm.GameOver("You were staked through the heart.");
+        }
+    }
+
+    void RevertColor()
+    {
+        rend.color = new Color(255, 255, 255, 255);
     }
 }

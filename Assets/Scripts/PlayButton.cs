@@ -7,20 +7,18 @@ using UnityEngine.EventSystems;
 public class PlayButton : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler {
 
 	public GameObject gm;
+    public GameObject mainMenu;
+    public GameObject gameScreen;
 
-	private Text playText;
-	private GameObject mainMenu;
-	private GameObject gameScreen;
+    private Text playText;
 
 	// Use this for initialization
 	void Start () {
-		if (!gm)
-			GameObject.Find ("GameManager");
-		playText = gameObject.GetComponent <Text> ();
-		mainMenu = GameObject.Find ("MainMenu");
-		gameScreen = GameObject.Find ("GameScreen");
-		gameScreen.SetActive (false);
-	}
+		if (!gm) GameObject.Find ("GameManager");
+		if (!mainMenu) mainMenu = GameObject.Find ("MainMenu");
+		if (!gameScreen) gameScreen = GameObject.Find ("GameScreen");
+        playText = gameObject.GetComponent<Text>();
+    }
 
 	// Update is called once per frame
 	void Update () {
@@ -28,9 +26,16 @@ public class PlayButton : MonoBehaviour, IPointerClickHandler, IPointerEnterHand
 	}
 
 	public void OnPointerClick(PointerEventData eventData) {
-		gm.GetComponent<GameManager>().StartGame ();
-		mainMenu.SetActive (false);
-		gameScreen.SetActive (true);
+        if (gameObject.name == "Play")
+        {
+            gm.GetComponent<GameManager>().StartGame();
+            mainMenu.SetActive(false);
+            gameScreen.SetActive(true);
+        }
+        else if (gameObject.name == "Quit")
+        {
+            Application.Quit();
+        }
 	}
 
 	public void OnPointerEnter(PointerEventData eventData)

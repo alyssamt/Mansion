@@ -25,7 +25,7 @@ public class GoldenSkull : MonoBehaviour
         {
             if (collision.gameObject.tag == "Kid")
             {
-                gm.GameOver();
+                gm.GameOver("You let an innocent kid burn to a crisp.");
             }
         }
     }
