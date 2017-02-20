@@ -6,15 +6,15 @@ using UnityEngine.UI;
 public class Kid : MonoBehaviour {
 
     public bool alerted = false;
+    public bool scared = false;
 
     public int floor;
     public int pointValue;
 
     public float speed;
-    public float movex;
-    public float movey;
     public float scareMeter = 0f;
     public float scareMeterMax = 1f;
+    public float alertRadius;
 
     public float audioCountdown;
     public AudioClip shortScream;
@@ -22,12 +22,12 @@ public class Kid : MonoBehaviour {
 
     public Color alertedColor;
 
+    public Vector2 sliderPos;
+
     private GameObject player;
     private Player playerScript;
 
     private AudioSource audioSource;
-
-    private bool scared = false;
 
     private GameManager gm;
     private Rigidbody2D rb;
@@ -40,8 +40,6 @@ public class Kid : MonoBehaviour {
     void Start()
     {
 		floor = 1;
-		movex = -1;
-		movey = 0;
 
         player = GameObject.Find("Player");
         if (player) playerScript = player.GetComponent<Player>();
@@ -63,16 +61,38 @@ public class Kid : MonoBehaviour {
         if (gm.playing)
         {
             //Movement
-            if (!scared && ((alerted && playerScript.floor == floor) || PlayerNear()))
+            if (scared)
             {
-                Vector2 xdir = (player.transform.position - transform.position).normalized;
-                rb.velocity = new Vector2(xdir.x, movey)*speed*1.5f;
-                alerted = true;
+                alerted = false;
+                if (floor == 2)
+                {
+                    rb.velocity = new Vector2(-speed*3, 0);
+                }
+                else
+                {
+                    rb.velocity = new Vector2(speed*3, 0);
+                }
             }
             else
             {
-                rb.velocity = new Vector2(movex * speed, movey * speed);
-                alerted = false;
+                if (PlayerNear(alerted))
+                {
+                    Vector2 xdir = (player.transform.position - transform.position).normalized;
+                    rb.velocity = new Vector2(xdir.x, 0) * speed * 1.5f;
+                    alerted = true;
+                }
+                else
+                {
+                    alerted = false;
+                    if (floor == 2)
+                    {
+                        rb.velocity = new Vector2(speed, 0);
+                    }
+                    else
+                    {
+                        rb.velocity = new Vector2(-speed, 0);
+                    }
+                }
             }
 
             //Color
@@ -86,7 +106,7 @@ public class Kid : MonoBehaviour {
 
             //Scare meter position and value
             Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(Camera.main, transform.position);
-            scareMeterSlider.GetComponent<RectTransform>().anchoredPosition = (screenPoint - canvasRectT.sizeDelta / 2f) + new Vector2(0, 28);
+            scareMeterSlider.GetComponent<RectTransform>().anchoredPosition = (screenPoint - canvasRectT.sizeDelta / 2f) + sliderPos;
             scareMeterSlider.value = scareMeter / scareMeterMax;
 
             if (!scared && scareMeter >= scareMeterMax)
@@ -95,8 +115,6 @@ public class Kid : MonoBehaviour {
                 Scream(true);
                 scareMeterSlider.enabled = false;
                 scared = true;
-                movex *= -1;
-                speed *= 2;
                 FlipSprite();
                 gm.score += pointValue;
                 gameObject.layer = 10;
@@ -107,14 +125,6 @@ public class Kid : MonoBehaviour {
         else
         {
             rb.velocity = new Vector2(0, 0);
-        }
-    }
-
-    private void OnCollisionEnter2D(Collision2D collision)
-    {
-        if (collision.collider.name == "Player")
-        {
-            player.GetComponent<Player>().DecrementLife();
         }
     }
 
@@ -142,19 +152,21 @@ public class Kid : MonoBehaviour {
         }
     }
 
-    bool PlayerNear()
+    public bool PlayerNear(bool myalerted)
     {
         if (playerScript)
         {
-            if (playerScript.floor == floor && !playerScript.possessing)
+            if (playerScript.floor == floor && !playerScript.possessing && !scared)
             {
-                if (movex == 1)
+                if (myalerted && Vector3.Distance(player.transform.position, transform.position) <= alertRadius) return true;
+
+                if (floor == 2)
                 {
-                    return player.transform.position.x > transform.position.x;
+                    return (player.transform.position.x > transform.position.x);
                 }
                 else
                 {
-                    return player.transform.position.x < transform.position.x;
+                    return (player.transform.position.x < transform.position.x);
                 }
             }
         } else
@@ -165,7 +177,7 @@ public class Kid : MonoBehaviour {
         return false;
     }
 
-    public void GetScared(int damage)
+    public void GetScared(float damage)
     {
         scareMeter += damage;
         Scream();

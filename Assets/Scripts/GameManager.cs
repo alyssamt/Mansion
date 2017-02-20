@@ -22,33 +22,44 @@ public class GameManager : MonoBehaviour {
     public GameObject trap = null;
     public GameObject player;
 	public GameObject kidPrefab;
-    public GameObject speechBubble;
 
+    public GameObject introScreen;
+    public GameObject tutorialScreen;
     public GameObject gameScreen;
     public GameObject levelTransitionScreen;
     public GameObject gameOverScreen;
+
+    public GameObject setupPanel;
 
     public TrapManager tm;
     public KidSpawner kidSpawner;
     public Slider timeSlider;
     public Text levelText;
     public Text scoreText;
+    public Text middleText;
+
+    public LivesDisplay livesDisplay;
 
     private float levelTimer;
-    private Text bubbleText;
     private Text modeText;
+    private Player playerScript;
+
+    private List<TrapTrigger> trapTriggers;
 
     // Use this for initialization
     void Start () {
         score = 0;
 
         if (!player) player = GameObject.Find("Player");
-        if (!speechBubble) speechBubble = GameObject.Find("SpeechBubble");
-        bubbleText = speechBubble.GetComponentInChildren<Text>();
+        playerScript = player.GetComponent<Player>();
 
+        if (!introScreen) introScreen = GameObject.Find("IntroScreen");
+        if (!tutorialScreen) tutorialScreen = GameObject.Find("TutorialScreen");
         if (!gameScreen) gameScreen = GameObject.Find("GameScreen");
         if (!levelTransitionScreen) levelTransitionScreen = GameObject.Find("LevelTransitionScreen");
         if (!gameOverScreen) gameOverScreen = GameObject.Find("GameOverScreen");
+
+        if (!setupPanel) setupPanel = GameObject.Find("SetupPanel");
 
         if (!tm) tm = GameObject.Find("TrapManager").GetComponent<TrapManager>();
         if (!kidSpawner) kidSpawner = GameObject.Find("KidSpawner").GetComponent<KidSpawner>();
@@ -57,29 +68,38 @@ public class GameManager : MonoBehaviour {
         modeText = timeSlider.GetComponentInChildren<Text>();
         if (!levelText) levelText = GameObject.Find("LevelText").GetComponent<Text>();
         if (!scoreText) scoreText = GameObject.Find("ScoreText").GetComponent<Text>();
+        if (!middleText) middleText = GameObject.Find("MiddleText").GetComponent<Text>();
 
-        levelTimer = setupTimerMax;
+        if (!livesDisplay) livesDisplay = GameObject.Find("Lives").GetComponent<LivesDisplay>();
 
         gameScreen.SetActive(true);
 
         floor2_y = GameObject.Find("Floor2").transform.position.y - 1.5f;
         floor3_y = GameObject.Find("Floor3").transform.position.y - 1.5f;
 
+        string[] trapTriggerNames = new string[] { "11", "12", "13", "21", "22", "23", "31", "32", "33" };
+        trapTriggers = new List<TrapTrigger>();
+        foreach (string s in trapTriggerNames)
+        {
+            trapTriggers.Add(GameObject.Find(s).GetComponent<TrapTrigger>());
+        }
+
+        introScreen.SetActive(false);
         gameScreen.SetActive(false);
         levelTransitionScreen.SetActive(false);
         gameOverScreen.SetActive(false);
 
-		//StartGame (); //REMOVE THIS ONCE USING MAIN MENU
-	}
+        levelTimer = setupTimerMax;
+    }
 
 	public void StartGame() {
-        bubbleText.text = "Halloween again, eh?";
-        tm.inventory.Clear();
+        tm.ResetAllTraps();
+        livesDisplay.ResetLives();
 		level = 0;
-		NextLevel ();
+        score = 0;
+        introScreen.SetActive(true);
 	}
 	
-	// Update is called once per frame
 	void Update () {
 		if (playing) {
 
@@ -114,44 +134,77 @@ public class GameManager : MonoBehaviour {
 		}
 	}
 
-	void NextLevel() {
+    public void ShowTutorial()
+    {
+        introScreen.SetActive(false);
+        tutorialScreen.SetActive(true);
+    }
+
+	public void NextLevel() {
+        playing = false;
 		CancelInvoke ();
-		playing = false;
+        level += 1;
         score += level * levelPointValue;
-		level += 1;
         tm.LoadInventory();
+        playerScript.ResetMe();
         kidSpawner.PrepareLevel(level);
 
         if (level == 1)
         {
+            tutorialScreen.SetActive(false);
+            gameScreen.SetActive(true);
             StartSetup();
-            levelTimer += 4 * speechDelay;
-            speechBubble.SetActive(true);
-            Invoke("Speech", speechDelay);
-        } else
+        }
+        else if (level == 12)
+        {
+            GameOver("The sun began to rise, and the old vampire went to sleep, grumbling about another successful year.");
+        }
+        else
         {
             levelTransitionScreen.SetActive(true);
             Text hoursLeftText = GameObject.Find("HoursLeftText").GetComponent<Text>();
             hoursLeftText.text = "Hours Left: ";
             hoursLeftText.text += (12 - (level - 2));
-            mode = "setup";
             Invoke("StartSetup", 2);
         }
 	}
 
     void StartSetup()
     {
-        DestroyAll("Kid");
-        levelTransitionScreen.SetActive(false);
         mode = "setup";
-        playing = true;
         levelTimer = setupTimerMax;
+        playing = true;
+        EnableMiddleText("SETUP");
+        levelTransitionScreen.SetActive(false);
+        setupPanel.SetActive(true);
+        foreach (TrapTrigger t in trapTriggers)
+        {
+            t.Render();
+        }
     }
 
     void StartDefense()
     {
         mode = "defense";
         levelTimer = levelTimerMax;
+        EnableMiddleText("DEFENSE");
+        setupPanel.SetActive(false);
+        foreach (TrapTrigger t in trapTriggers)
+        {
+            t.rend.enabled = false;
+        }
+    }
+
+    void EnableMiddleText(string str)
+    {
+        middleText.text = str;
+        middleText.enabled = true;
+        Invoke("DisableMiddleText", 1.5f);
+    }
+
+    void DisableMiddleText()
+    {
+        middleText.enabled = false;
     }
 
     public void GameOver(string message="")
@@ -171,34 +224,10 @@ public class GameManager : MonoBehaviour {
         finalScoreText.text += score;
     }
 
-    void Speech()
-    {
-        bubbleText.text = "Every year those darned kids come in here searching for my golden skull!";
-        Invoke("Speech2", speechDelay);
-    }
-
-    void Speech2()
-    {
-        bubbleText.text = "Little do they know, it will incinerate mere mortals upon touch!";
-        Invoke("Speech3", speechDelay);
-    }
-
-    void Speech3()
-    {
-        bubbleText.text = "For their own good, I have to scare those kids away from here.";
-        Invoke("SetBubbleInactive", speechDelay);
-    }
-
-    void SetBubbleInactive()
-    {
-        speechBubble.SetActive(false);
-    }
-
     void Clear()
     {
         DestroyAll("Kid");
         DestroyAll("Trap");
-        player.transform.position = new Vector3(-4, 1.2f, 0);
     }
 
     void DestroyAll(string tag)

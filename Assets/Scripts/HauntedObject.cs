@@ -16,7 +16,6 @@ public class HauntedObject : MonoBehaviour {
     private bool touching;
     private Player playerScript;
 
-	// Use this for initialization
 	void Start () {
         if (!gm) gm = GameObject.Find("GameManager").GetComponent<GameManager>();
         if (!player) player = GameObject.Find("Player");
@@ -36,9 +35,8 @@ public class HauntedObject : MonoBehaviour {
         }
     }
 	
-	// Update is called once per frame
 	void Update () {
-		if (Input.GetKeyDown(KeyCode.R) && touching && gm.mode == "defense")
+		if (Input.GetKeyDown(KeyCode.R) && touching && gm.mode != "setup")
         {
             Possess();
         }
@@ -46,7 +44,7 @@ public class HauntedObject : MonoBehaviour {
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collision.name == "Player" && gm.mode == "defense")
+        if (collision.name == "Player" && gm.mode != "setup")
         {
             touching = true;
             gameObject.GetComponent<SpriteRenderer>().color = touchingColor;
@@ -85,10 +83,18 @@ public class HauntedObject : MonoBehaviour {
         Invoke("DestroyMe", shakeTime);
     }
 
+    void Unpossess()
+    {
+        Debug.Log("Unpossessing");
+        playerScript.possessing = false;
+        Destroy(gameObject);
+    }
+
     void DestroyMe()
     {
-        playerScript.possessing = false;
+        Debug.Log("Destroying " + gameObject.name);
         player.SetActive(true);
-        Destroy(gameObject);
+        gameObject.SetActive(false);
+        Invoke("Unpossess", 2);
     }
 }

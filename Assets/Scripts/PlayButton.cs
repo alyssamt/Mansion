@@ -30,7 +30,6 @@ public class PlayButton : MonoBehaviour, IPointerClickHandler, IPointerEnterHand
         {
             gm.GetComponent<GameManager>().StartGame();
             mainMenu.SetActive(false);
-            gameScreen.SetActive(true);
         }
         else if (gameObject.name == "Quit")
         {

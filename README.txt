@@ -27,4 +27,5 @@ SOUND:
 Background Music | http://www.freesound.org/people/dAmbient/sounds/251936/
 Long Scream | https://www.freesound.org/people/TheSubber13/sounds/239900/
 Short Scream | https://www.freesound.org/people/adriancalzon/sounds/219858/
+Skeleton Laugh | https://soundcloud.com/jordan-k93/everquest-1-skeleton-laugh-2
 Vampire Hiss | https://www.freesound.org/people/Reitanna/sounds/343927/

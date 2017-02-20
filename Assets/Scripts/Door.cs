@@ -34,17 +34,16 @@ public class Door : MonoBehaviour {
 				if (gameObject.name == "Floor1_Up") {
 					collision.transform.position = floor2_down.transform.position+new Vector3(1, 0, 0);
 					kidScript.floor += 1;
-				} else if (gameObject.name == "Floor2_Down") {
+				} else if (gameObject.name == "Floor2_Down" && kidScript.scared) {
 					collision.transform.position = floor1_up.transform.position+new Vector3(1, 0, 0);
 					kidScript.floor -= 1;
 				} else if (gameObject.name == "Floor2_Up") {
 					collision.transform.position = floor3_down.transform.position+new Vector3(-1, 0, 0);
 					kidScript.floor += 1;
-				} else if (gameObject.name == "Floor3_Down") {
+				} else if (gameObject.name == "Floor3_Down" && kidScript.scared) {
 					collision.transform.position = floor2_up.transform.position+new Vector3(-1, 0, 0);
 					kidScript.floor -= 1;
 				}
-				kidScript.movex *= -1;
 				FlipSprite (collision.gameObject);
 			}
         }

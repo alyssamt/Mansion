@@ -1,95 +1,84 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Player : MonoBehaviour {
 
     public bool possessing = false;
 
     public float speed;
+    public float epowerMax;
 
     public int floor;
-    public int lives;
-    public int damage;
-    public int maxLives;
 
-    public GameObject livesDisplay;
+    public LivesDisplay livesDisplay;
+    public GameObject lifeLost;
+    public GameObject epowerDisplay;
 
     public Color hurtColor;
 
     public AudioClip hiss;
     public AudioClip groan;
 
-    private bool ready = false;
+    private Vector3 origPos;
 
     private float movex;
     private float movey;
+    private float epower;
 
     private GameManager gm;
     private Rigidbody2D rb;
     private SpriteRenderer rend;
     private AudioSource audioSource;
+    private Slider epowerSlider;
 
     // Use this for initialization
     void Start()
     {
         floor = 3;
-        lives = maxLives;
-        if (!livesDisplay) livesDisplay = GameObject.Find("Lives");
+        if (!livesDisplay) livesDisplay = GameObject.Find("Lives").GetComponent<LivesDisplay>();
+        if (!lifeLost) lifeLost = GameObject.Find("LifeLost");
+        if (!epowerDisplay) epowerDisplay = GameObject.Find("EPower");
+        epowerSlider = epowerDisplay.GetComponent<Slider>();
+        epower = epowerMax;
+        lifeLost.SetActive(false);
+        origPos = transform.position;
         gm = GameObject.Find("GameManager").GetComponent<GameManager>();
         rb = GetComponent<Rigidbody2D>();
         rend = GetComponent<SpriteRenderer>();
         audioSource = GetComponent<AudioSource>();
     }
 
-    // Update is called once per frame
     void FixedUpdate()
     {
         if (gm.playing)
         {
+            //E Power
+            epower += Time.deltaTime;
+            if (epower > epowerMax) epower = epowerMax;
+            epowerSlider.value = epower/epowerMax;
+
 			//Movement
             movex = Input.GetAxis("Horizontal");
             movey = Input.GetAxis("Vertical");
             rb.velocity = new Vector2(movex * speed, movey * speed);
 
-			//Go through ceiling
-            if (Input.GetKey(KeyCode.W) && ready == false)
+            //Enable movement through floor/ceiling
+            if (Input.GetKey("space"))
             {
-                ready = true;
+                gameObject.layer = 15;
+                rend.color = new Color(1, 1, 1, (float) 180/255);
             }
-            if (Input.GetKeyUp(KeyCode.W))
+            else
             {
-                ready = false;
-            }
-            if (Input.GetKeyDown("space") && ready == true)
-            {
-                ready = false;
-                if (floor != 3)
-                {
-                    //Go through ceiling
-                    gameObject.GetComponent<Collider2D>().enabled = false;
-                    Invoke("EnableCollider", 0.5f);
-                }
-            }
+                gameObject.layer = 9;
+                rend.color = new Color(1, 1, 1, 1);
 
-			//Go through floor
-            if (Input.GetKey(KeyCode.S) && ready == false)
-            {
-                ready = true;
-            }
-            if (Input.GetKeyUp(KeyCode.S))
-            {
-                ready = false;
-            }
-
-            if (Input.GetKeyDown("space") && ready == true)
-            {
-                ready = false;
-                if (floor != 1)
+                //Scare with E
+                if (Input.GetKeyDown(KeyCode.E))
                 {
-                    //Go through floor
-                    gameObject.GetComponent<Collider2D>().enabled = false;
-                    Invoke("EnableCollider", 0.5f);
+                    Scare();
                 }
             }
 
@@ -101,12 +90,14 @@ public class Player : MonoBehaviour {
 			} else {
 				floor = 1;
 			}
+        }
+    }
 
-			//Scare with spacebar
-			if (Input.GetKeyDown(KeyCode.E))
-            {
-                Scare();
-            }
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.collider.tag == "Kid" && !possessing)
+        {
+            DecrementLife();
         }
     }
 
@@ -117,38 +108,36 @@ public class Player : MonoBehaviour {
 		GameObject[] kids = GameObject.FindGameObjectsWithTag ("Kid");
 		foreach (GameObject kid in kids) {
 			Kid kidScript = kid.GetComponent<Kid> ();
-			if (kidScript.floor == floor) {
-                kidScript.GetScared(damage);
+			if (kidScript.PlayerNear(true)) {
+                kidScript.GetScared(epower);
 			}
 		}
-    }
-
-    void EnableCollider()
-    {
-        gameObject.GetComponent<Collider2D>().enabled = true;
+        epower = 0;
     }
 
     public void DecrementLife()
     {
         rend.color = hurtColor;
-        Invoke("RevertColor", 1);
+        lifeLost.SetActive(true);
+        Invoke("Revert", 1);
 
         audioSource.clip = groan;
         audioSource.Play();
 
-        lives -= 1;
-
-        Transform heart = livesDisplay.transform.GetChild(lives);
-        heart.gameObject.SetActive(false);
-
-        if (lives == 0)
+        if (livesDisplay.LoseLife() == 0)
         {
             gm.GameOver("You were staked through the heart.");
         }
     }
 
-    void RevertColor()
+    void Revert()
     {
         rend.color = new Color(255, 255, 255, 255);
+        lifeLost.SetActive(false);
+    }
+
+    public void ResetMe()
+    {
+        transform.position = origPos;
     }
 }
